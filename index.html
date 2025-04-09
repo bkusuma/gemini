@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Touch Typing Tutor</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            text-align: center;
+            color: #00599C; /* Python blue-ish */
+        }
+        #snippet-display {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.3em;
+            background-color: #e8e8e8;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            white-space: pre-wrap; /* Preserve whitespace and wrap */
+            word-wrap: break-word;
+            line-height: 1.5;
+            min-height: 100px; /* Ensure space for multi-line snippets */
+            border: 1px solid #ccc;
+        }
+        #snippet-display span {
+            /* Ensure spans behave correctly with whitespace */
+            display: inline;
+        }
+        #snippet-display .current {
+            background-color: #a0d2eb; /* Light blue highlight */
+            border-radius: 2px;
+            padding: 1px 0;
+        }
+         #snippet-display .correct {
+            color: #3a8a3a; /* Darker Green */
+        }
+        #snippet-display .incorrect {
+            color: #fff;
+            background-color: #d9534f; /* Red */
+            border-radius: 2px;
+            padding: 1px 0;
+            text-decoration: underline;
+        }
+        /* Style for the space character when it's current */
+        #snippet-display .current-space {
+             background-color: #a0d2eb;
+             border-radius: 2px;
+             padding: 1px 2px; /* Give it some visual width */
+             outline: 1px dotted #555; /* Make it more obvious */
+        }
+         /* Style for the newline character when it's current */
+        #snippet-display .current-newline::after {
+            content: '↵'; /* Show newline symbol */
+            display: inline-block;
+            background-color: #a0d2eb;
+            border-radius: 2px;
+            padding: 0 3px;
+            font-size: 0.8em;
+            vertical-align: middle;
+        }
+        #stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+        }
+        #stats div {
+            text-align: center;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            min-width: 100px;
+        }
+        #stats span {
+            font-weight: bold;
+            display: block;
+            font-size: 1.3em;
+        }
+        #message {
+            text-align: center;
+            margin-top: 15px;
+            font-weight: bold;
+            min-height: 1.5em; /* Prevent layout jumps */
+        }
+         #progress-history {
+            margin-top: 30px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+        #progress-history h2 {
+             margin-bottom: 15px;
+        }
+        #history-list {
+            list-style: none;
+            padding: 0;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            border-radius: 4px;
+        }
+         #history-list li {
+             padding: 8px 12px;
+             border-bottom: 1px solid #eee;
+             font-size: 0.9em;
+             color: #555;
+         }
+         #history-list li:last-child {
+             border-bottom: none;
+         }
+         #history-list li:nth-child(odd) {
+             background-color: #f9f9f9;
+         }
+        button#reset-button, button#next-button {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+        button#reset-button:hover, button#next-button:hover {
+            background-color: #0056b3;
+        }
+        .hidden {
+            display: none;
+        }
+        .instructions {
+             background-color: #fffbe6;
+             border: 1px solid #ffe58f;
+             padding: 15px;
+             border-radius: 5px;
+             margin-bottom: 20px;
+        }
+        .instructions p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Python Touch Typing Tutor</h1>
+
+        <div class="instructions">
+            <p><strong>Instructions:</strong></p>
+            <p>1. Click anywhere in the grey box or the page to start.</p>
+            <p>2. Type the highlighted Python code snippet exactly as shown.</p>
+            <p>3. Incorrect characters will be marked red. You must type the correct character to advance.</p>
+            <p>4. Your WPM and Accuracy will be calculated when you complete a snippet.</p>
+            <p>5. Use the 'Next Snippet' button to load a new challenge.</p>
+        </div>
+
+        <div id="stats">
+            <div>WPM<span id="wpm">0</span></div>
+            <div>Accuracy<span id="accuracy">0%</span></div>
+            <div>Errors<span id="errors">0</span></div>
+        </div>
+
+        <div id="snippet-display"></div>
+        <div id="message">Load a snippet to begin!</div>
+
+        <button id="next-button">Load/Next Snippet</button>
+        <button id="reset-button" class="hidden">Reset Current Snippet</button>
+
+
+        <div id="progress-history">
+            <h2>Progress History</h2>
+            <ul id="history-list">
+                <li>No history yet. Complete some snippets!</li>
+            </ul>
+             <button id="clear-history-button" style="display: block; margin: 15px auto 0; background-color: #dc3545;">Clear History</button>
+        </div>
+
+    </div>
+
+    <script>
+        const pythonSnippets = [
+            "name = 'Alice'",
+            "age = 30",
+            "print(f'Hello, {name}!')",
+            "x = 10\ny = 5\nresult = x + y",
+            "if age >= 18:\n    print('Adult')",
+            "numbers = [1, 2, 3, 4, 5]",
+            "for num in numbers:\n    print(num * 2)",
+            "def greet(person):\n    return f'Hi, {person}!'",
+            "my_dict = {'a': 1, 'b': 2}",
+            "import math\nradius = 5\narea = math.pi * (radius ** 2)",
+            "class Dog:\n    def __init__(self, name):\n        self.name = name",
+            "try:\n    result = 10 / 0\nexcept ZeroDivisionError:\n    print('Cannot divide by zero!')",
+            "data = [x**2 for x in range(10)]",
+            "with open('example.txt', 'w') as f:\n    f.write('Hello file!')",
+            "import pandas as pd\ndf = pd.DataFrame({'col1': [1, 2], 'col2': [3, 4]})",
+            "squares = {i: i*i for i in range(5)}",
+            "lambda x: x % 2 == 0",
+            "assert sum([1, 2, 3]) == 6, 'Should be 6'",
+            "list_comp = [c for c in 'python' if c not in 'aeiou']",
+            "tuple_example = (1, 'two', 3.0)",
+            "set_example = {1, 1, 2, 3, 3, 3}"
+        ];
+
+        const snippetDisplay = document.getElementById('snippet-display');
+        const message = document.getElementById('message');
+        const wpmDisplay = document.getElementById('wpm');
+        const accuracyDisplay = document.getElementById('accuracy');
+        const errorsDisplay = document.getElementById('errors');
+        const resetButton = document.getElementById('reset-button');
+        const nextButton = document.getElementById('next-button');
+        const historyList = document.getElementById('history-list');
+        const clearHistoryButton = document.getElementById('clear-history-button');
+
+
+        let currentSnippet = '';
+        let snippetChars = []; // Array of span elements
+        let currentCharIndex = 0;
+        let errors = 0;
+        let startTime = null;
+        let typingStarted = false;
+        let history = [];
+
+        // --- Initialization and State Management ---
+
+        function init() {
+            loadHistory();
+            displayHistory();
+            nextButton.addEventListener('click', loadNextSnippet);
+            resetButton.addEventListener('click', resetCurrentSnippet);
+            clearHistoryButton.addEventListener('click', clearHistory);
+            // Listen for keydown events anywhere on the page
+            document.addEventListener('keydown', handleKeyPress);
+             message.textContent = "Click 'Load/Next Snippet' to begin.";
+        }
+
+        function loadNextSnippet() {
+            // Simple sequential loading for now
+            // Could be randomized: const randomIndex = Math.floor(Math.random() * pythonSnippets.length);
+             const currentSnippetIndex = history.length % pythonSnippets.length; // Cycle through snippets
+             currentSnippet = pythonSnippets[currentSnippetIndex];
+             renderSnippet();
+             resetState();
+             resetButton.classList.remove('hidden');
+             message.textContent = 'Start typing when ready...';
+             snippetDisplay.focus(); // Try to set focus
+             document.body.scrollTop = document.documentElement.scrollTop = 0; // Scroll to top
+        }
+
+         function resetCurrentSnippet() {
+             if (!currentSnippet) return; // No snippet loaded
+             renderSnippet(); // Re-render the existing snippet
+             resetState();
+             message.textContent = 'Snippet reset. Start typing when ready...';
+         }
+
+        function resetState() {
+            currentCharIndex = 0;
+            errors = 0;
+            startTime = null;
+            typingStarted = false;
+            wpmDisplay.textContent = '0';
+            accuracyDisplay.textContent = '0%';
+            errorsDisplay.textContent = '0';
+            if (snippetChars.length > 0) {
+                 highlightCurrentChar();
+            }
+        }
+
+        // --- Rendering ---
+
+        function renderSnippet() {
+            snippetDisplay.innerHTML = ''; // Clear previous snippet
+            snippetChars = []; // Clear the array of spans
+
+            // Replace tabs with spaces (common in Python, adjust if needed)
+            const snippetWithSpaces = currentSnippet.replace(/\t/g, '    ');
+
+            snippetWithSpaces.split('').forEach(char => {
+                const span = document.createElement('span');
+                // Handle display of newline characters
+                if (char === '\n') {
+                    span.innerHTML = '&nbsp;\n'; // Add a space before newline for flow, browser handles the rest
+                     span.classList.add('newline-char'); // Add class for potential special styling
+                 } else if (char === ' ') {
+                     span.textContent = char;
+                     span.classList.add('space-char'); // Classify space
+                 }
+                 else {
+                    span.textContent = char;
+                }
+                snippetDisplay.appendChild(span);
+                snippetChars.push(span);
+            });
+             if (snippetChars.length > 0) {
+                 highlightCurrentChar(); // Highlight the first character initially
+             }
+        }
+
+        function highlightCurrentChar() {
+            snippetChars.forEach((span, index) => {
+                span.classList.remove('current', 'current-space', 'current-newline');
+                if (index === currentCharIndex) {
+                    span.classList.add('current');
+                    // Add specific classes for space and newline when current
+                    if (span.textContent === ' ') {
+                         span.classList.add('current-space');
+                    } else if (span.classList.contains('newline-char')) {
+                         span.classList.add('current-newline');
+                    }
+                }
+            });
+            // Ensure the current character is visible
+            const currentSpan = snippetChars[currentCharIndex];
+            if (currentSpan) {
+                 currentSpan.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+             }
+        }
+
+        // --- Event Handling ---
+
+        function handleKeyPress(event) {
+            // Don't process input if no snippet is loaded or it's completed
+             if (!currentSnippet || currentCharIndex >= snippetChars.length || !snippetChars.length) {
+                 // Prevent default browser actions like scrolling with spacebar if not typing
+                 if (event.key === ' ' || event.key === 'Enter') event.preventDefault();
+                 return;
+             }
+
+            // Ignore keys like Shift, Ctrl, Alt, Meta, Arrow Keys, etc.
+            // Allow Shift though, as it's needed for uppercase and symbols
+            if (event.key.length > 1 && event.key !== 'Enter' && event.key !== 'Backspace') {
+                 // We explicitly ignore Backspace here
+                return;
+            }
+             // Prevent default action for Enter and Space if they are part of the snippet
+             // to avoid page jumps or button clicks.
+             if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+             }
+
+            // Start timer on first valid keypress
+            if (!typingStarted) {
+                startTime = new Date();
+                typingStarted = true;
+                message.textContent = 'Typing...';
+            }
+
+            const expectedCharSpan = snippetChars[currentCharIndex];
+            let expectedChar = expectedCharSpan.textContent;
+            // Handle the newline character representation
+            if (expectedCharSpan.classList.contains('newline-char')) {
+                 expectedChar = '\n'; // Internally, we compare against newline
+             }
+
+            let typedChar = event.key;
+             // Remap 'Enter' key to newline character for comparison
+             if (typedChar === 'Enter') {
+                 typedChar = '\n';
+             }
+
+            // --- Backspace Handling (DISABLED for simplicity) ---
+            // if (typedChar === 'Backspace') {
+            //     // Optional: Implement backspace logic if desired
+            //     // Needs to handle moving currentCharIndex back, clearing styles, etc.
+            //     message.textContent = "Backspace is disabled in this version.";
+            //     event.preventDefault(); // Prevent browser back navigation
+            //     return;
+            // }
+
+
+            if (typedChar === expectedChar) {
+                // Correct character
+                expectedCharSpan.classList.remove('incorrect'); // Remove error if previously wrong
+                expectedCharSpan.classList.add('correct');
+                currentCharIndex++;
+
+                if (currentCharIndex === snippetChars.length) {
+                    // Snippet completed
+                    completeSnippet();
+                } else {
+                    highlightCurrentChar();
+                }
+            } else {
+                // Incorrect character
+                errors++;
+                errorsDisplay.textContent = errors;
+                 expectedCharSpan.classList.add('incorrect'); // Mark current char as having an error attempt
+                 // Don't advance currentCharIndex - user must type the correct key
+                 // Provide subtle feedback
+                 if (!message.textContent.endsWith(" Error!")) {
+                    message.textContent += " Error!";
+                    setTimeout(() => {
+                         if (message.textContent.endsWith(" Error!")) {
+                             message.textContent = message.textContent.replace(" Error!", "");
+                         }
+                     }, 800);
+                 }
+            }
+        }
+
+
+        // --- Completion and Stats ---
+
+        function completeSnippet() {
+            const endTime = new Date();
+            const elapsedTime = (endTime - startTime) / 1000; // seconds
+            const minutes = elapsedTime / 60;
+
+            // WPM Calculation: (Number of chars / 5) / minutes
+            // Using snippet length as the number of correctly typed characters
+            const numChars = currentSnippet.length; // Use original length before space/tab conversion
+            const words = numChars / 5;
+            const wpm = Math.round(words / minutes);
+
+            // Accuracy Calculation: (Total Chars - Errors) / Total Chars
+            // We count errors on attempts at a character, so total attempts might be higher.
+            // Let's calculate based on snippet length and errors made:
+            const accuracy = Math.max(0, Math.round(((numChars - errors) / numChars) * 100)); // Ensure accuracy isn't negative
+
+
+             wpmDisplay.textContent = wpm || 0; // Handle potential NaN/Infinity if time is zero
+             accuracyDisplay.textContent = `${accuracy || 0}%`;
+             errorsDisplay.textContent = errors;
+
+             message.textContent = `Snippet Complete! WPM: ${wpm}, Accuracy: ${accuracy}%`;
+             resetButton.classList.add('hidden'); // Hide reset until next snippet
+
+             // Save progress
+             saveProgress(wpm, accuracy, errors);
+             displayHistory();
+
+             // Optional: Automatically load next snippet after a delay
+             // setTimeout(loadNextSnippet, 2000);
+        }
+
+        // --- History / Progress Tracking ---
+
+         function saveProgress(wpm, accuracy, errorCount) {
+             const record = {
+                 timestamp: new Date().toLocaleString(),
+                 wpm: wpm,
+                 accuracy: accuracy,
+                 errors: errorCount,
+                 snippetPreview: currentSnippet.split('\n')[0].substring(0, 30) + (currentSnippet.length > 30 ? '...' : '') // First line preview
+             };
+             history.unshift(record); // Add to the beginning
+             // Limit history size (optional)
+             if (history.length > 50) {
+                 history.pop(); // Remove the oldest entry
+             }
+             localStorage.setItem('pythonTypingHistory', JSON.stringify(history));
+         }
+
+        function loadHistory() {
+            const storedHistory = localStorage.getItem('pythonTypingHistory');
+            if (storedHistory) {
+                history = JSON.parse(storedHistory);
+            } else {
+                history = [];
+            }
+        }
+
+         function displayHistory() {
+             historyList.innerHTML = ''; // Clear current list
+             if (history.length === 0) {
+                 historyList.innerHTML = '<li>No history yet. Complete some snippets!</li>';
+                 clearHistoryButton.style.display = 'none'; // Hide clear button if no history
+                 return;
+             }
+
+             clearHistoryButton.style.display = 'block'; // Show clear button if there's history
+
+             history.forEach(record => {
+                 const li = document.createElement('li');
+                 li.textContent = `${record.timestamp} - WPM: ${record.wpm}, Acc: ${record.accuracy}%, Err: ${record.errors} (Snippet: "${record.snippetPreview}")`;
+                 historyList.appendChild(li);
+             });
+         }
+
+         function clearHistory() {
+             if (confirm("Are you sure you want to clear your entire typing history? This cannot be undone.")) {
+                 history = [];
+                 localStorage.removeItem('pythonTypingHistory');
+                 displayHistory();
+                 message.textContent = "History cleared.";
+             }
+         }
+
+
+        // --- Start the application ---
+        document.addEventListener('DOMContentLoaded', init);
+
+    </script>
+</body>
+</html>
